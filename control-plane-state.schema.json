@@ -1,0 +1,584 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sovereign-os.dev/schemas/avatar.controlbus.synthetic.engineer.v1.json",
+  "title": "avatar.controlbus.synthetic.engineer.v1",
+  "description": "JSON Schema for constitutional wrapper control plane state and VVL entries",
+  
+  "definitions": {
+    "hash_value": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "SHA256 hash in format sha256:..."
+    },
+    
+    "timestamp_ns": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Nanosecond-precision Unix timestamp"
+    },
+    
+    "uuid_v7": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "UUID v7 (time-ordered)"
+    },
+    
+    "byte_array": {
+      "type": "string",
+      "pattern": "^[0-9a-f]*$",
+      "description": "Hex-encoded byte array"
+    },
+    
+    "crystal_vector": {
+      "type": "array",
+      "items": {
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0
+      },
+      "minItems": 3,
+      "maxItems": 3,
+      "description": "3D crystal lattice state vector [x, y, z]"
+    },
+    
+    "resonance_value": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Crystal resonance value (λ)"
+    },
+    
+    "bytesampler_state": {
+      "type": "object",
+      "required": ["byte_prefix", "rng_seed", "token_path", "distribution_entropy"],
+      "properties": {
+        "byte_prefix": {
+          "$ref": "#/definitions/byte_array",
+          "description": "Hex-encoded byte prefix at sampling point"
+        },
+        "rng_seed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "RNG seed for deterministic replay"
+        },
+        "token_path": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Sequence of tokens sampled via Valid Covering Tree"
+        },
+        "distribution_entropy": {
+          "type": "number",
+          "minimum": 0.0,
+          "description": "Shannon entropy of byte-level distribution"
+        },
+        "model_checkpoint": {
+          "type": "string",
+          "description": "Model checkpoint identifier for replay"
+        },
+        "tokenizer_type": {
+          "type": "string",
+          "enum": ["bpe", "sentencepiece", "custom", "proprietary"],
+          "description": "Tokenizer type used"
+        }
+      }
+    },
+    
+    "constitutional_check": {
+      "type": "object",
+      "required": ["constraint", "passed"],
+      "properties": {
+        "constraint": {
+          "type": "string",
+          "enum": [
+            "c5_symmetry",
+            "rsm_silhouette",
+            "budget_tokens",
+            "budget_gpu_seconds",
+            "scene_complexity",
+            "checkpoint_integrity",
+            "timestamp_validity"
+          ],
+          "description": "Constraint identifier"
+        },
+        "passed": {
+          "type": "boolean",
+          "description": "Whether constraint check passed"
+        },
+        "deviation": {
+          "type": "number",
+          "description": "Numerical deviation from ideal constraint value"
+        },
+        "threshold": {
+          "type": "number",
+          "description": "Threshold for pass/fail"
+        },
+        "corrective_transform": {
+          "type": "object",
+          "description": "Optional corrective transformation matrix"
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable explanation"
+        }
+      }
+    },
+    
+    "refusal_event": {
+      "type": "object",
+      "required": ["reason", "requested", "constraint_violated"],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "enum": [
+            "c5_symmetry_violation",
+            "rsm_silhouette_violation",
+            "budget_exceeded",
+            "scene_complexity_exceeded",
+            "checkpoint_integrity_failed",
+            "no_valid_token_at_boundary"
+          ],
+          "description": "Specific refusal reason"
+        },
+        "requested": {
+          "type": "object",
+          "description": "Original parameters that triggered refusal"
+        },
+        "constraint_violated": {
+          "type": "string",
+          "description": "Which constraint was violated"
+        },
+        "deviation": {
+          "type": "number",
+          "description": "Magnitude of deviation from acceptable range"
+        },
+        "suggested_fix": {
+          "type": "string",
+          "description": "Suggestion for how to fix and retry"
+        }
+      }
+    },
+    
+    "branch_metadata": {
+      "type": "object",
+      "required": ["is_fork"],
+      "properties": {
+        "is_fork": {
+          "type": "boolean",
+          "description": "Whether this entry is a branch fork"
+        },
+        "fork_from": {
+          "anyOf": [
+            {"$ref": "#/definitions/hash_value"},
+            {"type": "null"}
+          ],
+          "description": "Parent hash if this is a fork"
+        },
+        "fork_reason": {
+          "type": "string",
+          "description": "Why this fork was created"
+        },
+        "merge_candidate": {
+          "type": "boolean",
+          "description": "Whether this branch can be merged back"
+        },
+        "merge_into": {
+          "anyOf": [
+            {"$ref": "#/definitions/hash_value"},
+            {"type": "null"}
+          ],
+          "description": "Target hash for merge"
+        }
+      }
+    },
+    
+    "wrapped_system_input": {
+      "type": "object",
+      "required": ["agent"],
+      "properties": {
+        "agent": {
+          "type": "string",
+          "enum": [
+            "musicAnalyzer",
+            "sceneComposer",
+            "visualGenerator",
+            "effectsEngine",
+            "track_generator",
+            "video_avatar",
+            "studio_mixer",
+            "export_mp4",
+            "crystal_analyzer"
+          ],
+          "description": "Which agent/tool was invoked"
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Parameters passed to wrapped system"
+        },
+        "input_file_hash": {
+          "$ref": "#/definitions/hash_value",
+          "description": "Hash of input file if applicable"
+        }
+      }
+    },
+    
+    "wrapped_system_output": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "object",
+          "description": "Output from wrapped system"
+        },
+        "execution_time_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Execution time in milliseconds"
+        },
+        "tokens_used": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of tokens consumed"
+        },
+        "gpu_seconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "GPU time consumed"
+        },
+        "output_hash": {
+          "$ref": "#/definitions/hash_value",
+          "description": "Hash of output for verification"
+        }
+      }
+    },
+    
+    "vvl_entry": {
+      "type": "object",
+      "required": [
+        "entry_id",
+        "entry_type",
+        "timestamp_ns",
+        "prev_hash",
+        "current_hash",
+        "bytesampler_state"
+      ],
+      "properties": {
+        "entry_id": {
+          "$ref": "#/definitions/uuid_v7",
+          "description": "Unique entry identifier"
+        },
+        "entry_type": {
+          "type": "string",
+          "enum": [
+            "initialization",
+            "music_analysis",
+            "scene_generation",
+            "visual_generation",
+            "effect_application",
+            "track_synthesis",
+            "avatar_video",
+            "mix_tracks",
+            "export_video",
+            "crystal_analysis",
+            "token_commit",
+            "refusal",
+            "fork",
+            "merge"
+          ],
+          "description": "Type of VVL entry"
+        },
+        "timestamp_ns": {
+          "$ref": "#/definitions/timestamp_ns"
+        },
+        "prev_hash": {
+          "anyOf": [
+            {"$ref": "#/definitions/hash_value"},
+            {"type": "null"}
+          ],
+          "description": "Hash of previous entry (null for first entry)"
+        },
+        "current_hash": {
+          "$ref": "#/definitions/hash_value",
+          "description": "Hash of this entry (SHA256(prev_hash + entry_data))"
+        },
+        "bytesampler_state": {
+          "$ref": "#/definitions/bytesampler_state"
+        },
+        "wrapped_system_input": {
+          "$ref": "#/definitions/wrapped_system_input"
+        },
+        "wrapped_system_output": {
+          "$ref": "#/definitions/wrapped_system_output"
+        },
+        "constitutional_checks": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/constitutional_check"},
+          "description": "All constitutional checks performed"
+        },
+        "refusal": {
+          "$ref": "#/definitions/refusal_event",
+          "description": "Refusal details if entry_type is 'refusal'"
+        },
+        "branch_metadata": {
+          "$ref": "#/definitions/branch_metadata"
+        },
+        "session_id": {
+          "$ref": "#/definitions/uuid_v7",
+          "description": "Session this entry belongs to"
+        },
+        "user_id": {
+          "type": "string",
+          "description": "User who initiated this operation"
+        }
+      }
+    },
+    
+    "session": {
+      "type": "object",
+      "required": ["session_id", "created_at", "initial_seed", "status"],
+      "properties": {
+        "session_id": {
+          "$ref": "#/definitions/uuid_v7"
+        },
+        "created_at": {
+          "$ref": "#/definitions/timestamp_ns"
+        },
+        "updated_at": {
+          "$ref": "#/definitions/timestamp_ns"
+        },
+        "initial_seed": {
+          "type": "integer",
+          "description": "Initial RNG seed for entire session"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "completed", "failed", "replaying"],
+          "description": "Current session status"
+        },
+        "entry_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of VVL entries in session"
+        },
+        "refusal_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of refusal events"
+        },
+        "head_hash": {
+          "$ref": "#/definitions/hash_value",
+          "description": "Hash of most recent entry"
+        },
+        "input_file_hash": {
+          "$ref": "#/definitions/hash_value",
+          "description": "Hash of input music file"
+        },
+        "output_video_hash": {
+          "anyOf": [
+            {"$ref": "#/definitions/hash_value"},
+            {"type": "null"}
+          ],
+          "description": "Hash of final output video if completed"
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "music_bpm": {"type": "integer"},
+            "music_mood": {"type": "string"},
+            "music_duration_sec": {"type": "number"},
+            "scene_count": {"type": "integer"},
+            "crystal_vector": {"$ref": "#/definitions/crystal_vector"},
+            "resonance": {"$ref": "#/definitions/resonance_value"}
+          }
+        }
+      }
+    },
+    
+    "replay_result": {
+      "type": "object",
+      "required": ["session_id", "total_entries", "verified_entries", "divergences"],
+      "properties": {
+        "session_id": {
+          "$ref": "#/definitions/uuid_v7"
+        },
+        "total_entries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "verified_entries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "divergences": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of entries that failed verification"
+        },
+        "divergence_details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["entry_id", "divergence_type"],
+            "properties": {
+              "entry_id": {"$ref": "#/definitions/uuid_v7"},
+              "divergence_type": {
+                "type": "string",
+                "enum": [
+                  "bytesampler_divergence",
+                  "output_hash_mismatch",
+                  "constitutional_check_mismatch",
+                  "execution_error"
+                ]
+              },
+              "expected": {"type": "object"},
+              "actual": {"type": "object"},
+              "message": {"type": "string"}
+            }
+          }
+        },
+        "replay_duration_ms": {
+          "type": "number",
+          "description": "How long replay took"
+        },
+        "replay_timestamp": {
+          "$ref": "#/definitions/timestamp_ns"
+        }
+      }
+    },
+    
+    "ensemble_config": {
+      "type": "object",
+      "required": ["models"],
+      "properties": {
+        "models": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["model_id", "endpoint", "tokenizer_type", "weight"],
+            "properties": {
+              "model_id": {
+                "type": "string",
+                "description": "Model identifier (e.g., llama-3.3-70b)"
+              },
+              "endpoint": {
+                "type": "string",
+                "format": "uri",
+                "description": "API endpoint URL"
+              },
+              "tokenizer_type": {
+                "type": "string",
+                "enum": ["bpe", "sentencepiece", "custom", "proprietary"]
+              },
+              "weight": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "description": "Ensemble weight (must sum to 1.0 across all models)"
+              },
+              "checkpoint": {
+                "type": "string",
+                "description": "Model checkpoint identifier"
+              }
+            }
+          },
+          "minItems": 1
+        },
+        "combination_strategy": {
+          "type": "string",
+          "enum": ["weighted_average", "max_probability", "vote"],
+          "default": "weighted_average"
+        }
+      }
+    },
+    
+    "constitutional_config": {
+      "type": "object",
+      "properties": {
+        "c5_symmetry": {
+          "type": "object",
+          "properties": {
+            "enabled": {"type": "boolean", "default": true},
+            "tolerance": {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "description": "Allowed deviation from exact C5 symmetry"
+            },
+            "max_elements": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Maximum visual elements (must be multiple of 5)"
+            }
+          }
+        },
+        "rsm_silhouette": {
+          "type": "object",
+          "properties": {
+            "enabled": {"type": "boolean", "default": true},
+            "radial_tolerance": {"type": "number"},
+            "angular_tolerance": {"type": "number"}
+          }
+        },
+        "budget": {
+          "type": "object",
+          "properties": {
+            "max_tokens_per_generation": {
+              "type": "integer",
+              "default": 100000
+            },
+            "max_gpu_seconds": {
+              "type": "number",
+              "default": 300
+            },
+            "max_scene_complexity": {
+              "type": "integer",
+              "default": 50
+            }
+          }
+        },
+        "enforcement_mode": {
+          "type": "string",
+          "enum": ["permissive", "strict"],
+          "default": "strict",
+          "description": "permissive = log violations only, strict = block on violation"
+        }
+      }
+    }
+  },
+  
+  "type": "object",
+  "title": "ControlPlaneState",
+  "required": ["version", "checkpoint_id", "session", "vvl_entries"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "avatar.controlbus.synthetic.engineer.v1",
+      "description": "Control plane version identifier"
+    },
+    "checkpoint_id": {
+      "type": "string",
+      "pattern": "^cici_cp001",
+      "description": "Checkpoint identifier"
+    },
+    "session": {
+      "$ref": "#/definitions/session"
+    },
+    "vvl_entries": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/vvl_entry"},
+      "description": "All VVL entries for this session"
+    },
+    "constitutional_config": {
+      "$ref": "#/definitions/constitutional_config"
+    },
+    "ensemble_config": {
+      "$ref": "#/definitions/ensemble_config"
+    },
+    "crystal_state": {
+      "type": "object",
+      "properties": {
+        "vector": {"$ref": "#/definitions/crystal_vector"},
+        "resonance": {"$ref": "#/definitions/resonance_value"},
+        "drift_magnitude": {"type": "number"}
+      }
+    }
+  }
+}

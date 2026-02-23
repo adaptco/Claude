@@ -1,0 +1,13 @@
+services:
+  claude:
+    image: claude
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import bytesampler_adapter" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
