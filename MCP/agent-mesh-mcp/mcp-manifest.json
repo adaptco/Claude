@@ -1,0 +1,82 @@
+{
+  "$schema": "https://agent-mesh-mcp/schema/manifest.json",
+  "version": "0.1.0",
+  "name": "agent-mesh-mcp",
+  "description": "LLM-agnostic multi-agent orchestration via MCP",
+
+  "agents": [
+    {
+      "agentId": "orchestrator",
+      "role": "orchestrator",
+      "capabilities": ["task_decomposition", "routing", "summarize"],
+      "llmAdapter": "stub"
+    },
+    {
+      "agentId": "specialist",
+      "role": "specialist",
+      "capabilities": ["summarize", "transform", "extract"],
+      "llmAdapter": "stub"
+    },
+    {
+      "agentId": "gatekeeper",
+      "role": "gatekeeper",
+      "capabilities": ["policy_enforcement", "consent_adjudication"],
+      "llmAdapter": "stub"
+    }
+  ],
+
+  "tools": [
+    {
+      "name": "agents.list",
+      "description": "List all registered agents and their capabilities",
+      "inputSchema": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "agents.send",
+      "description": "Send an AgentMessage to a specific agent via the consent router",
+      "inputSchema": {
+        "type": "object",
+        "required": ["to", "type", "payload"],
+        "properties": {
+          "to":      { "type": "string" },
+          "type":    { "type": "string", "enum": ["task","query","artifact"] },
+          "payload": { "type": "object" }
+        }
+      }
+    },
+    {
+      "name": "artifacts.seal",
+      "description": "Seal a draft artifact, making it immutable",
+      "inputSchema": {
+        "type": "object",
+        "required": ["artifactId"],
+        "properties": { "artifactId": { "type": "string" } }
+      }
+    },
+    {
+      "name": "artifacts.query",
+      "description": "Semantic vector search over the artifact store",
+      "inputSchema": {
+        "type": "object",
+        "required": ["text"],
+        "properties": {
+          "text":  { "type": "string" },
+          "topK":  { "type": "number", "default": 5 }
+        }
+      }
+    },
+    {
+      "name": "fossils.list",
+      "description": "Return the full tamper-evident fossil chain",
+      "inputSchema": { "type": "object", "properties": {} }
+    }
+  ],
+
+  "adapters": {
+    "stub":      "@agent-mesh/adapter-stub",
+    "openai":    "@agent-mesh/adapter-openai",
+    "anthropic": "@agent-mesh/adapter-anthropic",
+    "gemini":    "@agent-mesh/adapter-gemini",
+    "ollama":    "@agent-mesh/adapter-ollama"
+  }
+}

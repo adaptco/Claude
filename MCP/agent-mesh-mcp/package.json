@@ -1,0 +1,18 @@
+{
+  "name": "agent-mesh-mcp",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev --parallel",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "hello-mesh": "tsx apps/gateway/src/hello-mesh.ts"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.5.0",
+    "tsx": "^4.7.0",
+    "@types/node": "^20.0.0"
+  }
+}

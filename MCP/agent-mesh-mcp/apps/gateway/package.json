@@ -1,0 +1,16 @@
+{
+  "name": "@agent-mesh/gateway",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./src/hello-mesh.ts",
+  "dependencies": {
+    "@agent-mesh/core": "workspace:*",
+    "@agent-mesh/mcp-router": "workspace:*",
+    "@agent-mesh/artifact-store": "workspace:*",
+    "@agent-mesh/adapter-stub": "workspace:*"
+  },
+  "scripts": {
+    "dev": "tsx src/hello-mesh.ts",
+    "hello": "tsx src/hello-mesh.ts"
+  }
+}
