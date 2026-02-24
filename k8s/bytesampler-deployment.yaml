@@ -1,0 +1,253 @@
+---
+# Namespace for bytesampler application
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bytesampler
+  labels:
+    name: bytesampler
+
+---
+# ConfigMap for non-sensitive configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bytesampler-config
+  namespace: bytesampler
+data:
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONUNBUFFERED: "1"
+  PYTHONHASHSEED: "random"
+
+---
+# Secret for sensitive configuration
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bytesampler-secrets
+  namespace: bytesampler
+type: Opaque
+stringData:
+  # Replace with your actual secrets
+  DATABASE_URL: "postgresql://user:password@postgres:5432/bytesampler"
+  API_KEY: "your-api-key-here"
+  # In production, use external secret management (AWS Secrets Manager, Azure Key Vault, etc.)
+
+---
+# ServiceAccount for RBAC
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: bytesampler-sa
+  namespace: bytesampler
+
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bytesampler-adapter
+  namespace: bytesampler
+  labels:
+    app: bytesampler-adapter
+    version: v1
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: bytesampler-adapter
+  template:
+    metadata:
+      labels:
+        app: bytesampler-adapter
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+    spec:
+      serviceAccountName: bytesampler-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 5678
+        runAsGroup: 5678
+        fsGroup: 5678
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: bytesampler
+        image: ghcr.io/your-org/bytesampler-adapter:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+        env:
+        # Configuration from ConfigMap
+        - name: PYTHONDONTWRITEBYTECODE
+          valueFrom:
+            configMapKeyRef:
+              name: bytesampler-config
+              key: PYTHONDONTWRITEBYTECODE
+        - name: PYTHONUNBUFFERED
+          valueFrom:
+            configMapKeyRef:
+              name: bytesampler-config
+              key: PYTHONUNBUFFERED
+        - name: PYTHONHASHSEED
+          valueFrom:
+            configMapKeyRef:
+              name: bytesampler-config
+              key: PYTHONHASHSEED
+        # Secrets from Secret resource
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: bytesampler-secrets
+              key: DATABASE_URL
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: bytesampler-secrets
+              key: API_KEY
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import bytesampler_adapter; print('alive')"
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import bytesampler_adapter; print('ready')"
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 5678
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: app-cache
+          mountPath: /app/cache
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: app-cache
+        emptyDir:
+          sizeLimit: 500Mi
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - bytesampler-adapter
+              topologyKey: kubernetes.io/hostname
+      terminationGracePeriodSeconds: 30
+
+---
+# Service (ClusterIP for internal communication)
+apiVersion: v1
+kind: Service
+metadata:
+  name: bytesampler-adapter
+  namespace: bytesampler
+  labels:
+    app: bytesampler-adapter
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: bytesampler-adapter
+
+---
+# Service (LoadBalancer for external access - optional, use Ingress for production)
+apiVersion: v1
+kind: Service
+metadata:
+  name: bytesampler-adapter-lb
+  namespace: bytesampler
+  labels:
+    app: bytesampler-adapter
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: bytesampler-adapter
+
+---
+# HorizontalPodAutoscaler for automatic scaling
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: bytesampler-adapter-hpa
+  namespace: bytesampler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: bytesampler-adapter
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+# PodDisruptionBudget to ensure availability during disruptions
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: bytesampler-adapter-pdb
+  namespace: bytesampler
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: bytesampler-adapter

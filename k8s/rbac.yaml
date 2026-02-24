@@ -1,0 +1,64 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: control-plane-proxy-netpol
+  namespace: control-plane
+spec:
+  podSelector:
+    matchLabels:
+      app: control-plane-proxy
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - podSelector:
+        matchLabels:
+          role: frontend
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 8000  # Backend service
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+    - protocol: TCP
+      port: 53    # DNS
+    - protocol: UDP
+      port: 53
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: control-plane-proxy
+  namespace: control-plane
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: control-plane-proxy
+  namespace: control-plane
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: control-plane-proxy
+subjects:
+- kind: ServiceAccount
+  name: control-plane-proxy
+  namespace: control-plane

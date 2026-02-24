@@ -1,0 +1,85 @@
+---
+# Role for bytesampler
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: bytesampler-role
+  namespace: bytesampler
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get"]
+
+---
+# RoleBinding to attach Role to ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: bytesampler-rolebinding
+  namespace: bytesampler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: bytesampler-role
+subjects:
+- kind: ServiceAccount
+  name: bytesampler-sa
+  namespace: bytesampler
+
+---
+# NetworkPolicy to control ingress/egress traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: bytesampler-netpol
+  namespace: bytesampler
+spec:
+  podSelector:
+    matchLabels:
+      app: bytesampler-adapter
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8000
+  # Allow from same namespace (for service-to-service)
+  - from:
+    - podSelector:
+        matchLabels:
+          app: bytesampler-adapter
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  # Allow DNS
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Allow to database (adjust destination as needed)
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow to external APIs
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80

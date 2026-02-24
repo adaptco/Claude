@@ -1,0 +1,68 @@
+---
+# Ingress for HTTP/HTTPS routing (requires ingress-nginx controller)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bytesampler-ingress
+  namespace: bytesampler
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"  # If using cert-manager
+    # For rate limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-connections: "10"
+spec:
+  tls:
+  - hosts:
+    - bytesampler.example.com  # Replace with your domain
+    secretName: bytesampler-tls
+  rules:
+  - host: bytesampler.example.com  # Replace with your domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: bytesampler-adapter
+            port:
+              number: 80
+
+---
+# Optional: ServiceMonitor for Prometheus (requires Prometheus Operator)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: bytesampler-monitor
+  namespace: bytesampler
+spec:
+  selector:
+    matchLabels:
+      app: bytesampler-adapter
+  endpoints:
+  - port: http
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+# Optional: PrometheusRule for alerting
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: bytesampler-alerts
+  namespace: bytesampler
+spec:
+  groups:
+  - name: bytesampler
+    interval: 30s
+    rules:
+    - alert: BytesamplerHighErrorRate
+      expr: rate(bytesampler_errors_total[5m]) > 0.05
+      for: 5m
+      annotations:
+        summary: "High error rate detected in bytesampler"
+    - alert: BytesamplerPodCrashing
+      expr: rate(kube_pod_container_status_restarts_total{pod=~"bytesampler-adapter-.*"}[15m]) > 0
+      for: 5m
+      annotations:
+        summary: "Bytesampler pod is crashing"

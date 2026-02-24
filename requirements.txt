@@ -1,5 +1,2 @@
-# Runtime dependencies
+# Production dependencies only
 numpy>=1.26,<3
-
-# Test dependencies
-pytest>=8.0,<9

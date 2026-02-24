@@ -1,0 +1,62 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vvl-cleanup
+  namespace: control-plane
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: control-plane-proxy
+          containers:
+          - name: cleanup
+            image: ghcr.io/your-org/control-plane:latest
+            command:
+            - python
+            - -c
+            - |
+              from vvl import VersionedVectorLedger
+              import os
+              vvl = VersionedVectorLedger(os.getenv('VVL_DB_URL'))
+              vvl.cleanup_old_sessions(days=30)
+              print("Cleanup completed")
+            env:
+            - name: VVL_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: control-plane-secrets
+                  key: VVL_DB_URL
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 200m
+                memory: 256Mi
+          restartPolicy: OnFailure
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: control-plane-proxy
+  namespace: control-plane
+spec:
+  selector:
+    matchLabels:
+      app: control-plane-proxy
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: control-plane
+  labels:
+    name: control-plane

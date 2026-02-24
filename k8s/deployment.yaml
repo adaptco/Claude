@@ -1,0 +1,206 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: control-plane-config
+  namespace: control-plane
+data:
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONUNBUFFERED: "1"
+  LOG_LEVEL: "INFO"
+  VVL_CACHE_SIZE: "1000"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: control-plane-secrets
+  namespace: control-plane
+type: Opaque
+stringData:
+  BACKEND_URL: "http://music-video-backend:8000"
+  VVL_DB_URL: "postgresql://vvl:password@postgres:5432/vvl"
+  # Base64 encode sensitive data in production
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: control-plane-proxy
+  namespace: control-plane
+  labels:
+    app: control-plane-proxy
+    version: v1
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: control-plane-proxy
+  template:
+    metadata:
+      labels:
+        app: control-plane-proxy
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: control-plane-proxy
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 5678
+        fsGroup: 5678
+      containers:
+      - name: control-plane
+        image: ghcr.io/your-org/control-plane:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+        env:
+        - name: PYTHONDONTWRITEBYTECODE
+          valueFrom:
+            configMapKeyRef:
+              name: control-plane-config
+              key: PYTHONDONTWRITEBYTECODE
+        - name: PYTHONUNBUFFERED
+          valueFrom:
+            configMapKeyRef:
+              name: control-plane-config
+              key: PYTHONUNBUFFERED
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: control-plane-config
+              key: LOG_LEVEL
+        - name: BACKEND_URL
+          valueFrom:
+            secretKeyRef:
+              name: control-plane-secrets
+              key: BACKEND_URL
+        - name: VVL_DB_URL
+          valueFrom:
+            secretKeyRef:
+              name: control-plane-secrets
+              key: VVL_DB_URL
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: vvl-cache
+          mountPath: /app/vvl-cache
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: vvl-cache
+        emptyDir:
+          sizeLimit: 1Gi
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - control-plane-proxy
+              topologyKey: kubernetes.io/hostname
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: control-plane-proxy
+  namespace: control-plane
+  labels:
+    app: control-plane-proxy
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: control-plane-proxy
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: control-plane-proxy-hpa
+  namespace: control-plane
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: control-plane-proxy
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: control-plane-proxy
+  namespace: control-plane
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: control-plane-proxy-pdb
+  namespace: control-plane
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: control-plane-proxy

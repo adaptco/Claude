@@ -1,13 +1,22 @@
 services:
-  claude:
-    image: claude
+  app:
+    image: bytesampler-adapter
     build:
       context: .
       dockerfile: ./Dockerfile
+    container_name: bytesampler-adapter
     restart: unless-stopped
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
     healthcheck:
-      test: [ "CMD", "python", "-c", "import bytesampler_adapter" ]
+      test: ["CMD", "python", "-c", "import bytesampler_adapter; print('healthy')"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
