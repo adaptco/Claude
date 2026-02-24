@@ -1,0 +1,21 @@
+{
+  "name": "@agent-mesh/mcp-server",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/server.js",
+  "dependencies": {
+    "@agent-mesh/adapter-stub": "workspace:*",
+    "@agent-mesh/artifact-store": "workspace:*",
+    "@agent-mesh/core": "workspace:*",
+    "@agent-mesh/mcp-bridge": "workspace:*",
+    "@agent-mesh/mcp-router": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "zod": "^3.25.76"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/server.ts",
+    "serve": "tsx src/server.ts",
+    "test": "tsx --test test/*.test.ts"
+  }
+}

@@ -212,7 +212,7 @@ export class ConsentEnforcingRouter implements Router {
       .digest("hex");
     this.lastFossilHash = chainHash;
 
-    const fossil = await this.store.fossil({ event, agentId, taskTreeId, payload, chainHash });
+    const fossil = await this.store.fossil({ event, agentId, taskTreeId, payload });
     return fossil;
   }
 

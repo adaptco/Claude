@@ -69,6 +69,47 @@
       "name": "fossils.list",
       "description": "Return the full tamper-evident fossil chain",
       "inputSchema": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "agents.spawn",
+      "description": "Route a task to a selected or semantically-ranked agent and return the reply",
+      "inputSchema": {
+        "type": "object",
+        "required": ["task"],
+        "properties": {
+          "task": { "type": "string" },
+          "agentId": { "type": "string" },
+          "taskTreeId": { "type": "string" }
+        }
+      }
+    },
+    {
+      "name": "repo.search",
+      "description": "Search repository chunks by normalized embedding similarity via sidecar",
+      "inputSchema": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": { "type": "string" },
+          "topK": { "type": "number", "default": 8 },
+          "agentFilter": { "type": "string" }
+        }
+      }
+    },
+    {
+      "name": "twin.get_state",
+      "description": "Get current digital twin summary state",
+      "inputSchema": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "twin.get_tasks",
+      "description": "List digital twin tasks, optionally filtered by status",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" }
+        }
+      }
     }
   ],
 
