@@ -1,0 +1,188 @@
+name: Automated Code Review
+
+on:
+    pull_request:
+        branches: [main, develop]
+    workflow_run:
+        workflows: ["Test, Lint & Coverage"]
+        types: [completed]
+        branches: [main, develop]
+
+jobs:
+    code-review:
+        runs-on: ubuntu-latest
+        # Run directly on PRs, or when triggered via workflow_run on success
+        if: >
+            github.event_name == 'pull_request' ||
+            github.event.workflow_run.conclusion == 'success'
+        permissions:
+            contents: read
+            pull-requests: write
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  # For workflow_run events, check out the HEAD of the triggering PR
+                  ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+            - name: Set up Python 3.12
+              uses: actions/setup-python@v4
+              with:
+                  python-version: "3.12"
+                  cache: "pip"
+
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements.txt
+                  pip install pytest pytest-cov pylint
+
+            # ── Pylint ────────────────────────────────────────────────────────────
+            - name: Run pylint (JSON + text reports)
+              id: pylint
+              run: |
+                  # JSON for parsing; text for PR comment body
+                  pylint bytesampler_adapter.py \
+                    --rcfile=.pylintrc \
+                    --output-format=json \
+                    --fail-under=8.0 > pylint-report.json 2>&1 || true
+
+                  pylint bytesampler_adapter.py \
+                    --rcfile=.pylintrc \
+                    --output-format=text \
+                    --fail-under=8.0 2>&1 | tee pylint-text.txt || true
+
+                  # Extract score line (e.g. "Your code has been rated at 9.50/10")
+                  SCORE=$(grep -oP 'rated at \K[0-9.]+(?=/10)' pylint-text.txt \
+                          || echo "N/A")
+                  VIOLATIONS=$(python3 - <<'EOF'
+                  import json, sys
+                  try:
+                      data = json.load(open("pylint-report.json"))
+                      msgs = [m for m in data if isinstance(m, dict) and "type" in m]
+                      print(len(msgs))
+                  except Exception:
+                      print(0)
+                  EOF
+                  )
+                  echo "score=$SCORE"       >> "$GITHUB_OUTPUT"
+                  echo "violations=$VIOLATIONS" >> "$GITHUB_OUTPUT"
+
+            # ── Pytest ────────────────────────────────────────────────────────────
+            - name: Run tests + coverage
+              id: pytest
+              run: |
+                  pytest test_harness.py -v --tb=short -q \
+                    --cov=bytesampler_adapter \
+                    --cov-report=term-missing \
+                    2>&1 | tee pytest-output.txt || true
+
+                  PASSED=$(grep -oP '\d+ passed' pytest-output.txt | head -1 \
+                           || echo "? passed")
+                  FAILED=$(grep -oP '\d+ failed' pytest-output.txt | head -1 \
+                           || echo "")
+                  ERRORS=$(grep -oP '\d+ error'  pytest-output.txt | head -1 \
+                           || echo "")
+
+                  echo "passed=$PASSED" >> "$GITHUB_OUTPUT"
+                  echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
+                  echo "errors=$ERRORS" >> "$GITHUB_OUTPUT"
+
+            # ── PR Comment ────────────────────────────────────────────────────────
+            - name: Post code-review comment on PR
+              if: github.event_name == 'pull_request'
+              uses: actions/github-script@v7
+              env:
+                  PYLINT_SCORE: ${{ steps.pylint.outputs.score }}
+                  PYLINT_VIOLATIONS: ${{ steps.pylint.outputs.violations }}
+                  PYTEST_PASSED: ${{ steps.pytest.outputs.passed }}
+                  PYTEST_FAILED: ${{ steps.pytest.outputs.failed }}
+                  PYTEST_ERRORS: ${{ steps.pytest.outputs.errors }}
+              with:
+                  script: |
+                      const fs   = require('fs');
+                      const score      = process.env.PYLINT_SCORE;
+                      const violations = parseInt(process.env.PYLINT_VIOLATIONS, 10) || 0;
+                      const passed     = process.env.PYTEST_PASSED;
+                      const failed     = process.env.PYTEST_FAILED;
+                      const errors     = process.env.PYTEST_ERRORS;
+
+                      // Build pylint violations table (top 15)
+                      let pylintSection = '✅ **No violations detected.**';
+                      try {
+                        const raw = JSON.parse(fs.readFileSync('pylint-report.json', 'utf8'));
+                        const msgs = raw.filter(m => m && m.type);
+                        if (msgs.length > 0) {
+                          const icon = score >= 8 ? '🟡' : '🔴';
+                          const rows = msgs.slice(0, 15).map(v =>
+                            `| \`${v.path}:${v.line}\` | \`${v.symbol}\` | ${v.message} |`
+                          ).join('\n');
+                          const overflow = msgs.length > 15
+                            ? `\n_…and ${msgs.length - 15} more — see [full run](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})_`
+                            : '';
+                          pylintSection = `${icon} **${msgs.length} violation(s) found** (score: ${score}/10)\n\n| Location | Rule | Message |\n|---|---|---|\n${rows}${overflow}`;
+                        } else {
+                          pylintSection = `✅ **Score: ${score}/10 — No violations.**`;
+                        }
+                      } catch (_) {}
+
+                      // Last 30 lines of pytest output
+                      const pytestLines = fs.readFileSync('pytest-output.txt', 'utf8')
+                        .split('\n').slice(-30).join('\n');
+
+                      const testIcon = failed || errors ? '❌' : '✅';
+                      const testSummary = [passed, failed, errors].filter(Boolean).join(' · ') || 'see output';
+
+                      const body = [
+                        '## 🤖 Automated Code Review',
+                        '',
+                        '### 🔍 Pylint',
+                        pylintSection,
+                        '',
+                        '### 🧪 Tests',
+                        `${testIcon} **${testSummary}**`,
+                        '```',
+                        pytestLines,
+                        '```',
+                        '',
+                        `> Triggered by commit \`${context.sha.slice(0, 7)}\` · [View run](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`,
+                      ].join('\n');
+
+                      // Delete any existing bot comment to keep PR tidy (idempotent)
+                      const comments = await github.rest.issues.listComments({
+                        owner:        context.repo.owner,
+                        repo:         context.repo.repo,
+                        issue_number: context.issue.number,
+                      });
+                      const botComment = comments.data.find(c =>
+                        c.user.type === 'Bot' && c.body.startsWith('## 🤖 Automated Code Review')
+                      );
+                      if (botComment) {
+                        await github.rest.issues.deleteComment({
+                          owner:      context.repo.owner,
+                          repo:       context.repo.repo,
+                          comment_id: botComment.id,
+                        });
+                      }
+
+                      await github.rest.issues.createComment({
+                        owner:        context.repo.owner,
+                        repo:         context.repo.repo,
+                        issue_number: context.issue.number,
+                        body,
+                      });
+
+            # ── Fail job if pylint score is below threshold ────────────────────
+            - name: Enforce pylint score gate
+              run: |
+                  SCORE="${{ steps.pylint.outputs.score }}"
+                  echo "Pylint score: $SCORE / 10"
+                  python3 -c "
+                  import sys
+                  score = float('${SCORE}') if '${SCORE}' != 'N/A' else 0.0
+                  if score < 8.0:
+                      print(f'FAIL: pylint score {score} is below the 8.0 threshold.')
+                      sys.exit(1)
+                  print(f'PASS: pylint score {score} >= 8.0')
+                  "

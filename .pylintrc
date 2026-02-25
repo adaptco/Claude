@@ -1,10 +1,9 @@
 [MASTER]
-# Use multiple processes to speed up Pylint
 jobs = 1
 
 [MESSAGES CONTROL]
-# too-few-public-methods: disabled for test helper/mock classes which are
-# intentionally thin data holders, not full application classes.
+# too-few-public-methods: test mock/helper classes are intentionally thin.
+# missing-module-docstring: module-level docstrings are present in source files.
 disable =
     too-few-public-methods,
     missing-module-docstring
@@ -12,11 +11,5 @@ disable =
 [FORMAT]
 max-line-length = 100
 
-[DESIGN]
-# Minimum number of public methods for a class (applied globally; test mocks
-# are explicitly excluded via the disable above).
-min-public-methods = 2
-
 [SIMILARITIES]
-# Minimum lines number of a similarity.
 min-similarity-lines = 10

@@ -317,7 +317,7 @@ class ByteSamplerAdapter:
             self.model_endpoint,
         )
         rng = random.Random(12345)
-        
+
         # Sort paths for determinism
         paths.sort(key=lambda p: p.bytes_covered)
 

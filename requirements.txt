@@ -1,2 +1,8 @@
-# Production dependencies only
+# Runtime dependencies
 numpy>=1.26,<3
+
+# Test dependencies
+pytest>=8.0,<9
+
+# Linting
+pylint>=3.0,<4

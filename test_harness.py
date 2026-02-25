@@ -102,7 +102,7 @@ class TestByteSamplerDeterminism:
         # Verify seed derivation is deterministic across instances
         adapter2 = ByteSamplerAdapter("model", "bpe", rng_seed=100)
         adapter2.sample_next_bytes(b"test", max_length=4)
-        assert adapter2.current_seed == derived_seed, \
+        assert adapter2.current_seed == derived_seed == expected_seed, \
             "Seed derivation not deterministic across instances"
 
 
