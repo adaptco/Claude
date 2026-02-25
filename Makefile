@@ -1,10 +1,9 @@
 .PHONY: help test lint build push deploy-staging deploy-prod clean
 
-REGISTRY := ghcr.io
-ORG := your-org
-IMAGE_NAME := control-plane
+REGISTRY_ORG ?= ghcr.io/myorg
+IMAGE_NAME ?= control-plane
 VERSION := $(shell git describe --tags --always --dirty)
-IMAGE := $(REGISTRY)/$(ORG)/$(IMAGE_NAME):$(VERSION)
+IMAGE := $(REGISTRY_ORG)/$(IMAGE_NAME):$(VERSION)
 
 help:
 	@echo "Control Plane Deployment Pipeline"
@@ -75,7 +74,7 @@ build:
 	docker buildx build \
 		--platform linux/amd64,linux/arm64 \
 		-t $(IMAGE) \
-		-t $(REGISTRY)/$(ORG)/$(IMAGE_NAME):latest \
+		-t $(REGISTRY_ORG)/$(IMAGE_NAME):latest \
 		.
 
 build-local:
@@ -83,7 +82,7 @@ build-local:
 
 push: build-local
 	docker push $(IMAGE)
-	docker push $(REGISTRY)/$(ORG)/$(IMAGE_NAME):latest
+	docker push $(REGISTRY_ORG)/$(IMAGE_NAME):latest
 
 scan:
 	@command -v trivy >/dev/null || { echo "Installing Trivy..."; go install github.com/aquasecurity/trivy@latest; }

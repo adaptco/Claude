@@ -274,7 +274,7 @@ GitHub Actions triggers
    ```bash
    git tag v0.1.0
    git push origin v0.1.0
-   # Watch GitHub Actions: https://github.com/your-org/your-repo/actions
+   # Watch GitHub Actions: https://github.com/${GITHUB_ORG}/your-repo/actions
    # Verify Kubernetes deployment updated
    ```
 

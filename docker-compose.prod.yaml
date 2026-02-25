@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   control-plane-proxy:
-    image: ghcr.io/your-org/control-plane:latest
+    image: "${REGISTRY_ORG}/${IMAGE_NAME}:latest"
     container_name: control-plane-proxy
     ports:
       - "8080:8000"
@@ -10,6 +10,7 @@ services:
       PYTHONDONTWRITEBYTECODE: "1"
       PYTHONUNBUFFERED: "1"
       LOG_LEVEL: "INFO"
+      ALLOWED_ORIGIN: "${ALLOWED_ORIGIN}"
       BACKEND_URL: "http://music-video-backend:8000"
       VVL_DB_URL: "postgresql://vvl:vvl_password@postgres:5432/vvl"
     depends_on:

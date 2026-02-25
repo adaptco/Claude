@@ -26,6 +26,7 @@ Use the setup script to replace placeholders with your production values:
 ## Replacement Points
 
 - `${REGISTRY_ORG}` and `${IMAGE_NAME}`:
+  - `docker-compose.prod.yaml`
   - `k8s/deployment.yaml`
   - `k8s/extras.yaml`
   - `k8s/bytesampler-deployment.yaml`

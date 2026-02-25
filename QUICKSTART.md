@@ -153,8 +153,8 @@ make clean-all        # Full cleanup
 
 ## 🔗 Next Steps
 
-1. Add GitHub secrets: https://github.com/your-org/your-repo/settings/secrets
-2. Update image registry in workflows (replace `your-org`)
+1. Add GitHub secrets: https://github.com/${GITHUB_ORG}/your-repo/settings/secrets
+2. Set placeholders in deployment files (`${REGISTRY_ORG}`, `${IMAGE_NAME}`, `${VH2_DOMAIN}`, `${GITHUB_ORG}`, `${ALLOWED_ORIGIN}`)
 3. Test locally with `make staging`
 4. Deploy to staging: `make deploy-staging`
 5. Create git tag and push to trigger production pipeline
@@ -165,7 +165,7 @@ make clean-all        # Full cleanup
 
 ```bash
 # View GitHub Actions logs
-# https://github.com/your-org/your-repo/actions
+# https://github.com/${GITHUB_ORG}/your-repo/actions
 
 # View Kubernetes deployment status
 kubectl describe deployment control-plane-proxy -n control-plane

@@ -1,23 +1,41 @@
 services:
   app:
-    image: bytesampler-adapter
+    image: ${IMAGE_NAME:-a2a-digital-twin:local}
     build:
       context: .
       dockerfile: ./Dockerfile
-    container_name: bytesampler-adapter
+    container_name: a2a-digital-twin
     restart: unless-stopped
     environment:
       PYTHONDONTWRITEBYTECODE: "1"
       PYTHONUNBUFFERED: "1"
-      MCP_TRANSPORT: stdio
+      MCP_TRANSPORT: http
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: "8080"
+      A2A_REPO_ROOT: /app/a2a-digital-twin
+      TWIN_STATE_FILE: /data/twin_state.json
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-*}
+    ports:
+      - "8080:8080"
+    volumes:
+      - twin-state:/data
     healthcheck:
-      test: ["CMD", "python", "-c", "import claude_code_mcp_server; print('healthy')"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os,socket; s=socket.socket(); s.settimeout(4); s.connect(('127.0.0.1', int(os.getenv('MCP_PORT','8080')))); s.close()",
+        ]
       interval: 30s
       timeout: 5s
-      retries: 3
-      start_period: 10s
+      retries: 5
+      start_period: 25s
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  twin-state:

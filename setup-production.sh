@@ -80,4 +80,8 @@ while IFS= read -r -d '' file; do
   patch_file "$file"
 done < <(find .github/workflows -type f -name '*.yml' -print0)
 
-echo "Patched k8s manifests and workflows with provided values."
+if [[ -f "docker-compose.prod.yaml" ]]; then
+  patch_file "docker-compose.prod.yaml"
+fi
+
+echo "Patched k8s manifests, workflows, and docker-compose.prod.yaml with provided values."

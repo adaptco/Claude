@@ -27,8 +27,8 @@
 
 - [ ] **Workflow Files Configured**
   - [ ] Update image registry in `.github/workflows/docker-build-push.yml`
-    - Replace `ghcr.io` with your registry
-    - Replace `your-org` with your organization
+    - Set `${REGISTRY_ORG}` to your registry/org path
+    - Set `${IMAGE_NAME}` to your deployable image name
   - [ ] Update Kubernetes namespace if not using `control-plane`
   - [ ] Configure branch triggers (main/develop)
 
@@ -75,7 +75,7 @@
   - [ ] Verify NetworkPolicy: `kubectl get networkpolicy -n control-plane`
 
 - [ ] **Deployments & Services**
-  - [ ] Update image registry in `k8s/deployment.yaml`
+  - [ ] Set `${REGISTRY_ORG}` and `${IMAGE_NAME}` in `k8s/deployment.yaml`
   - [ ] Apply deployment: `kubectl apply -f k8s/deployment.yaml`
   - [ ] Verify deployment: `kubectl get deployment -n control-plane`
   - [ ] Test service: `kubectl port-forward -n control-plane svc/control-plane-proxy 8080:80`
@@ -120,7 +120,7 @@
 - [ ] **Docker Build Workflow**
   - [ ] Create minor tag: `git tag v0.1.0 && git push origin v0.1.0`
   - [ ] Monitor GitHub Actions: Watch build progress
-  - [ ] Verify image in registry: `docker pull ghcr.io/your-org/control-plane:v0.1.0`
+  - [ ] Verify image in registry: `docker pull ${REGISTRY_ORG}/${IMAGE_NAME}:v0.1.0`
   - [ ] Check Trivy scan results in GitHub Security tab
 
 - [ ] **Deployment Workflow**
