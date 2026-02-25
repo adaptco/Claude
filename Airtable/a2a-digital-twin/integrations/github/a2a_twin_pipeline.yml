@@ -307,7 +307,7 @@ jobs:
   update-airtable-on-success:
     name: Update Airtable Task Status
     runs-on: ubuntu-latest
-    needs: deploy-production
+    needs: office-checkpoint
     if: success()
 
     steps:
@@ -342,33 +342,3 @@ jobs:
 
           asyncio.run(mark_done())
           PYEOF
-
-  # ── Job 6: Deploy to Production ────────────────────────────────────────────
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: test-and-verify # Depends on tests passing
-    if: github.ref == 'refs/heads/main' # Only run on main branch
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push Docker image
-        id: build-and-push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}

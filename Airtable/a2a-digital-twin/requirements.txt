@@ -1,0 +1,7 @@
+fastmcp
+httpx
+numpy
+openai
+pytest
+pytest-json-report
+uvicorn
