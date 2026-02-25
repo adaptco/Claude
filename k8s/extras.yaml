@@ -12,7 +12,7 @@ spec:
           serviceAccountName: control-plane-proxy
           containers:
           - name: cleanup
-            image: ghcr.io/your-org/control-plane:latest
+            image: "${REGISTRY_ORG}/${IMAGE_NAME}:latest"
             command:
             - python
             - -c

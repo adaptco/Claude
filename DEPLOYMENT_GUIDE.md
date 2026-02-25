@@ -39,9 +39,9 @@ Features:
 
 **Image tags generated:**
 ```
-ghcr.io/your-org/control-plane:main
-ghcr.io/your-org/control-plane:v1.0.0
-ghcr.io/your-org/control-plane:sha-abc123...
+${REGISTRY_ORG}/${IMAGE_NAME}:main
+${REGISTRY_ORG}/${IMAGE_NAME}:v1.0.0
+${REGISTRY_ORG}/${IMAGE_NAME}:sha-abc123...
 ```
 
 **Security scans:**
@@ -306,8 +306,8 @@ kubectl rollout undo deployment/control-plane-proxy --to-revision=2 -n control-p
 
 ```bash
 # Modify docker-compose.prod.yaml image tag
-# From: ghcr.io/your-org/control-plane:latest
-# To:   ghcr.io/your-org/control-plane:v1.0.0
+# From: ${REGISTRY_ORG}/${IMAGE_NAME}:latest
+# To:   ${REGISTRY_ORG}/${IMAGE_NAME}:v1.0.0
 
 docker compose -f docker-compose.prod.yaml up -d
 ```
@@ -355,7 +355,7 @@ GitHub Actions uses layer caching. To optimize:
 ## Next Steps
 
 1. **Configure secrets** - Add GitHub secrets and kubeconfig
-2. **Update image registry** - Replace `your-org` with actual registry
+2. **Set deployment placeholders** - Fill `${REGISTRY_ORG}`, `${IMAGE_NAME}`, `${VH2_DOMAIN}`, `${GITHUB_ORG}`, and `${ALLOWED_ORIGIN}`
 3. **Test locally** - Run `docker-compose.staging.yaml` first
 4. **Deploy to staging** - Verify in staging before production
 5. **Enable monitoring** - Set up Prometheus/Grafana

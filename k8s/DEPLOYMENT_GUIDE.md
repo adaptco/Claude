@@ -12,24 +12,24 @@ The Kubernetes manifests are organized into three files:
 
 - Kubernetes cluster v1.20+ (1.24+ recommended)
 - kubectl configured with access to your cluster
-- Docker image pushed to a registry (e.g., `ghcr.io/your-org/bytesampler-adapter:latest`)
+- Docker image pushed to a registry (e.g., `${REGISTRY_ORG}/${IMAGE_NAME}:latest`)
 - Optional: Ingress controller (nginx-ingress), cert-manager, Prometheus Operator
 
 ## Step 1: Build and Push Docker Image
 
 ```bash
 # Build the image
-docker build -t ghcr.io/your-org/bytesampler-adapter:latest .
+docker build -t ${REGISTRY_ORG}/${IMAGE_NAME}:latest .
 
 # Push to registry
-docker push ghcr.io/your-org/bytesampler-adapter:latest
+docker push ${REGISTRY_ORG}/${IMAGE_NAME}:latest
 ```
 
 ## Step 2: Update Configuration
 
 Edit `bytesampler-deployment.yaml` and update:
 
-1. **Image Registry**: Change `ghcr.io/your-org/bytesampler-adapter:latest` to your actual image
+1. **Image Registry**: Set `${REGISTRY_ORG}` and `${IMAGE_NAME}` to your actual image path
 2. **Secrets**: Update `bytesampler-secrets` with actual database URL, API keys, etc.:
 
 ```yaml
@@ -94,7 +94,7 @@ helm install ingress-nginx ingress-nginx/ingress-nginx -n ingress-nginx --create
 Then deploy Ingress:
 
 ```bash
-# Edit bytesampler-ingress.yaml to set your domain
+# Set ${VH2_DOMAIN} in bytesampler-ingress.yaml
 kubectl apply -f k8s/bytesampler-ingress.yaml
 
 # Verify
@@ -165,7 +165,7 @@ kubectl get hpa -n bytesampler -w
 ```bash
 # Update image
 kubectl set image deployment/bytesampler-adapter \
-  bytesampler=ghcr.io/your-org/bytesampler-adapter:v2.0 \
+  bytesampler=${REGISTRY_ORG}/${IMAGE_NAME}:v2.0 \
   -n bytesampler
 
 # Watch rollout
@@ -240,7 +240,7 @@ kubectl logs <pod-name> -n bytesampler -p
 
 ```bash
 # Verify image exists in registry
-docker inspect ghcr.io/your-org/bytesampler-adapter:latest
+docker inspect ${REGISTRY_ORG}/${IMAGE_NAME}:latest
 
 # Check image pull policy and credentials
 kubectl describe pod <pod-name> -n bytesampler
@@ -260,7 +260,7 @@ kubectl logs <pod-name> -n bytesampler
 
 1. **Use specific image tags** (not `latest`):
    ```yaml
-   image: ghcr.io/your-org/bytesampler-adapter:v1.0.0
+   image: ${REGISTRY_ORG}/${IMAGE_NAME}:v1.0.0
    ```
 
 2. **Manage secrets securely**:

@@ -14,10 +14,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - bytesampler.example.com  # Replace with your domain
+    - ${VH2_DOMAIN}
     secretName: bytesampler-tls
   rules:
-  - host: bytesampler.example.com  # Replace with your domain
+  - host: ${VH2_DOMAIN}
     http:
       paths:
       - path: /

@@ -8,6 +8,7 @@ data:
   PYTHONUNBUFFERED: "1"
   LOG_LEVEL: "INFO"
   VVL_CACHE_SIZE: "1000"
+  ALLOWED_ORIGIN: "${ALLOWED_ORIGIN}"
 
 ---
 apiVersion: v1
@@ -56,7 +57,7 @@ spec:
         fsGroup: 5678
       containers:
       - name: control-plane
-        image: ghcr.io/your-org/control-plane:latest
+        image: "${REGISTRY_ORG}/${IMAGE_NAME}:latest"
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
@@ -78,6 +79,11 @@ spec:
             configMapKeyRef:
               name: control-plane-config
               key: LOG_LEVEL
+        - name: ALLOWED_ORIGIN
+          valueFrom:
+            configMapKeyRef:
+              name: control-plane-config
+              key: ALLOWED_ORIGIN
         - name: BACKEND_URL
           valueFrom:
             secretKeyRef:
