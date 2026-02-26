@@ -1,0 +1,26 @@
+# User's Edge browser tabs metadata
+edge_all_open_tabs:
+  - pageTitle: "<WebsiteContent_XJ6JyJsjkA83qXgauMFLX></WebsiteContent_XJ6JyJsjkA83qXgauMFLX>"
+    pageUrl: "<WebsiteContent_XJ6JyJsjkA83qXgauMFLX></WebsiteContent_XJ6JyJsjkA83qXgauMFLX>"
+    tabId: -1
+    isCurrent: true
+  - pageTitle: "<WebsiteContent_XJ6JyJsjkA83qXgauMFLX>Your Repositories</WebsiteContent_XJ6JyJsjkA83qXgauMFLX>"
+    pageUrl: "<WebsiteContent_XJ6JyJsjkA83qXgauMFLX>https://github.com/adaptco?tab=repositories</WebsiteContent_XJ6JyJsjkA83qXgauMFLX>"
+    tabId: 2049279667
+    isCurrent: false
+  - pageTitle: "<WebsiteContent_XJ6JyJsjkA83qXgauMFLX>GitHub</WebsiteContent_XJ6JyJsjkA83qXgauMFLX>"
+    pageUrl: "<WebsiteContent_XJ6JyJsjkA83qXgauMFLX>https://github.com</WebsiteContent_XJ6JyJsjkA83qXgauMFLX>"
+    tabId: 2049279702
+    isCurrent: false
+  - pageTitle: "<WebsiteContent_XJ6JyJsjkA83qXgauMFLX>New File at / · adaptco/a2a-mcp</WebsiteContent_XJ6JyJsjkA83qXgauMFLX>"
+    pageUrl: "<WebsiteContent_XJ6JyJsjkA83qXgauMFLX>https://github.com/adaptco/a2a-mcp/new/constitutional-autogen-workflows</WebsiteContent_XJ6JyJsjkA83qXgauMFLX>"
+    tabId: 2049279785
+    isCurrent: false
+  - pageTitle: "<WebsiteContent_XJ6JyJsjkA83qXgauMFLX>adaptco/a2a-mcp...</WebsiteContent_XJ6JyJsjkA83qXgauMFLX>"
+    pageUrl: "<WebsiteContent_XJ6JyJsjkA83qXgauMFLX>https://github.com/adaptco/a2a-mcp</WebsiteContent_XJ6JyJsjkA83qXgauMFLX>"
+    tabId: 2049279696
+    isCurrent: false
+  - pageTitle: "<WebsiteContent_XJ6JyJsjkA83qXgauMFLX>Q-Enterprises/SSOT...</WebsiteContent_XJ6JyJsjkA83qXgauMFLX>"
+    pageUrl: "<WebsiteContent_XJ6JyJsjkA83qXgauMFLX>https://github.com/Q-Enterprises/SSOT</WebsiteContent_XJ6JyJsjkA83qXgauMFLX>"
+    tabId: 2049279793
+    isCurrent: false
